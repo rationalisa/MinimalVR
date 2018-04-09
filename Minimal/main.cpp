@@ -453,7 +453,7 @@ public:
 			ovrMatrix4f ovrPerspectiveProjection =
 				ovrMatrix4f_Projection(erd.Fov, 0.01f, 1000.0f, ovrProjection_ClipRangeOpenGL);
 			_eyeProjections[eye] = ovr::toGlm(ovrPerspectiveProjection);
-			_viewScaleDesc.HmdToEyeOffset[eye] = erd.HmdToEyeOffset;
+			_viewScaleDesc.HmdToEyePose[eye] = erd.HmdToEyePose;
 
 			ovrFovPort & fov = _sceneLayer.Fov[eye] = _eyeRenderDescs[eye].Fov;
 			auto eyeSize = ovr_GetFovTextureSize(_session, eye, fov, 1.0f);
@@ -543,7 +543,7 @@ protected:
 
 	void draw() final override {
 		ovrPosef eyePoses[2];
-		ovr_GetEyePoses(_session, frame, true, _viewScaleDesc.HmdToEyeOffset, eyePoses, &_sceneLayer.SensorSampleTime);
+		ovr_GetEyePoses(_session, frame, true, _viewScaleDesc.HmdToEyePose, eyePoses, &_sceneLayer.SensorSampleTime);
 
 		int curIndex;
 		ovr_GetTextureSwapChainCurrentIndex(_session, _eyeTexture, &curIndex);
