@@ -53,6 +53,7 @@ using glm::vec2;
 using glm::vec3;
 using glm::vec4;
 using glm::quat;
+using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -570,6 +571,36 @@ protected:
 		glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mirrorTextureId, 0);
 		glBlitFramebuffer(0, 0, _mirrorSize.x, _mirrorSize.y, 0, _mirrorSize.y, _mirrorSize.x, 0, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+
+
+		// Query Touch controllers. Query their parameters:
+		double displayMidpointSeconds = ovr_GetPredictedDisplayTime(_session, 0);
+		ovrTrackingState trackState = ovr_GetTrackingState(_session, displayMidpointSeconds, ovrTrue);
+
+		// Process controller status. Useful to know if controller is being used at all, and if the cameras can see it. 
+		// Bits reported:
+		// Bit 1: ovrStatus_OrientationTracked  = Orientation is currently tracked (connected and in use)
+		// Bit 2: ovrStatus_PositionTracked     = Position is currently tracked (false if out of range)
+		unsigned int handStatus[2];
+		handStatus[0] = trackState.HandStatusFlags[0];
+		handStatus[1] = trackState.HandStatusFlags[1];
+		// Display status for debug purposes:
+		cerr << "handStatus[left]  = " << handStatus[ovrHand_Left] << endl;
+		cerr << "handStatus[right] = " << handStatus[ovrHand_Right] << endl;
+
+		// Process controller position and orientation:
+		ovrPosef handPoses[2];  // These are position and orientation in meters in room coordinates, relative to tracking origin. Right-handed cartesian coordinates.
+								// ovrQuatf     Orientation;
+								// ovrVector3f  Position;
+		handPoses[0] = trackState.HandPoses[0].ThePose;
+		handPoses[1] = trackState.HandPoses[1].ThePose;
+		ovrVector3f handPosition[2];
+		handPosition[0] = handPoses[0].Position;
+		handPosition[1] = handPoses[1].Position;
+		// Display positions for debug purposes:
+		cerr << "left hand position  = " << handPosition[ovrHand_Left].x << ", " << handPosition[ovrHand_Left].y << ", " << handPosition[ovrHand_Left].z << endl;
+		cerr << "right hand position = " << handPosition[ovrHand_Right].x << ", " << handPosition[ovrHand_Right].y << ", " << handPosition[ovrHand_Right].z << endl;
 	}
 
 	virtual void renderScene(const glm::mat4 & projection, const glm::mat4 & headPose) = 0;
@@ -660,6 +691,7 @@ struct ColorCubeScene {
 
 	// Program
 	oglplus::shapes::ShapeWrapper cube;
+	oglplus::shapes::Sphere sphere;
 	oglplus::Program prog;
 	oglplus::VertexArray vao;
 	GLuint instanceCount;
@@ -737,6 +769,9 @@ public:
 };
 
 
+
+
+
 // An example application that renders a simple cube
 class ExampleApp : public RiftApp {
 	std::shared_ptr<ColorCubeScene> cubeScene;
@@ -747,7 +782,7 @@ public:
 protected:
 	void initGl() override {
 		RiftApp::initGl();
-		glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
+		glClearColor(9.0f, 0.2f, 0.8f, 0.0f);
 		glEnable(GL_DEPTH_TEST);
 		ovr_RecenterTrackingOrigin(_session);
 		cubeScene = std::shared_ptr<ColorCubeScene>(new ColorCubeScene());
@@ -765,16 +800,17 @@ protected:
 // Execute our example class
 int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	int result = -1;
-	try {
+	std::cout << "sefefffffffffffffffffffffffffffffffffffffffff";
+	//try {
 		if (!OVR_SUCCESS(ovr_Initialize(nullptr))) {
 			FAIL("Failed to initialize the Oculus SDK");
 		}
 		result = ExampleApp().run();
-	}
-	catch (std::exception & error) {
-		OutputDebugStringA(error.what());
-		std::cerr << error.what() << std::endl;
-	}
+	//}
+	//catch (std::exception & error) {
+	//	OutputDebugStringA(error.what());
+	//	std::cerr << error.what() << std::endl;
+	//}
 	ovr_Shutdown();
 	return result;
 }
